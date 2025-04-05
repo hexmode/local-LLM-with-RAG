@@ -1,14 +1,17 @@
-from langchain_ollama import ChatOllama
-
 from models import check_if_model_is_available
 from document_loader import load_documents_into_database
 import argparse
 import sys
 
-from llm import getChatChain
+from llm_graph import getChatGraph
 
 
-def main(llm_model_name: str, embedding_model_name: str, documents_path: str) -> None:
+def main() -> None:
+    args = parse_arguments()
+    llm_model_name = args.model
+    embedding_model_name = args.embedding_model
+    documents_path = args.path
+
     # Check to see if the models available, if not attempt to pull them
     try:
         check_if_model_is_available(llm_model_name)
@@ -24,8 +27,7 @@ def main(llm_model_name: str, embedding_model_name: str, documents_path: str) ->
         print(e)
         sys.exit()
 
-    llm = ChatOllama(model=llm_model_name)
-    chat = getChatChain(llm, db)
+    chat = getChatGraph(llm_model_name, db)
 
     while True:
         try:
@@ -34,9 +36,10 @@ def main(llm_model_name: str, embedding_model_name: str, documents_path: str) ->
             ).strip()
             if user_input.lower() == "exit":
                 break
-            else:
-                chat(user_input)
-        
+            for event in chat.stream({"messages": [{"role": "user", "content": user_input}]}):
+                for value in event.values():
+                    print("Assistant:", value["messages"][-1].content)
+
         except KeyboardInterrupt:
             break
 
@@ -65,5 +68,4 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
-    main(args.model, args.embedding_model, args.path)
+    main()
