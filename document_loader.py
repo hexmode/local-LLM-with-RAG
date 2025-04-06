@@ -8,6 +8,7 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
+from langchain.tools import Tool
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 PERSIST_DIRECTORY = "storage"
@@ -29,13 +30,25 @@ def load_documents_into_database(model_name: str, documents_path: str, reload: b
     embeddings = OllamaEmbeddings(model=model_name)
 
     print("Creating embeddings and loading documents into Chroma")
-    vector_store = Chroma(
+    vectordb = Chroma(
         collection_name="example_collection",
         embedding_function=embeddings,
         persist_directory=PERSIST_DIRECTORY
     )
-    vector_store.add_documents(documents=documents)
-    return vector_store
+    vectordb.add_documents(documents=documents)
+    return vectordb
+
+
+def get_retriever(vectordb: Chroma) -> callable:
+    def retrieve_documents(query: str) -> str:
+        retriever = vectordb.as_retriever()
+        docs = retriever.aget_relevant_documents(query)
+        return "\n".join([doc.page_content for doc in docs])
+    return Tool.from_function(
+        func=retrieve_documents,
+        name="document_retriever",
+        description="Useful for retrieving documents based on a user query."
+    )
 
 
 def load_documents(path: str) -> List[Document]:

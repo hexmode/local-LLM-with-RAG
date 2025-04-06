@@ -1,5 +1,5 @@
 from models import check_if_model_is_available
-from document_loader import load_documents_into_database
+from document_loader import load_documents_into_database, get_retriever
 import argparse
 import sys
 
@@ -27,7 +27,7 @@ def main() -> None:
         print(e)
         sys.exit()
 
-    chat = getChatGraph(llm_model_name, db)
+    chat = getChatGraph(llm_model_name, get_retriever(db))
 
     while True:
         try:
@@ -40,7 +40,8 @@ def main() -> None:
                 for value in event.values():
                     print("Assistant:", value["messages"][-1].content)
 
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
+            print("\nGoodbye!")
             break
 
 

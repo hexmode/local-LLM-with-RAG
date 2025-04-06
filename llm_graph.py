@@ -18,9 +18,10 @@ class State(TypedDict):
 def getChatGraph(llm_model_name: str, db) -> CompiledGraph:
     graph_builder = StateGraph(State)
     llm = ChatOllama(model=llm_model_name)
+    llm_with_tool = llm.bind_tools([db])
 
     def chatbot(state: State):
-        return {"messages": [llm.invoke(state["messages"])]}
+        return {"messages": [llm_with_tool.invoke(state["messages"])]}
 
     graph_builder.add_node("chatbot", chatbot)
     graph_builder.add_edge(START, "chatbot")
