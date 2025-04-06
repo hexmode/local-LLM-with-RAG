@@ -7,7 +7,7 @@ import os
 from typing import List
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 PERSIST_DIRECTORY = "storage"
@@ -23,22 +23,19 @@ def load_documents_into_database(model_name: str, documents_path: str, reload: b
         Chroma: The Chroma database with loaded documents.
     """
 
-    if reload:
-        print("Loading documents")
-        raw_documents = load_documents(documents_path)
-        documents = TEXT_SPLITTER.split_documents(raw_documents)
+    print("Loading documents")
+    raw_documents = load_documents(documents_path)
+    documents = TEXT_SPLITTER.split_documents(raw_documents)
+    embeddings = OllamaEmbeddings(model=model_name)
 
-        print("Creating embeddings and loading documents into Chroma")
-        return Chroma.from_documents(
-            documents=documents,
-            embedding=OllamaEmbeddings(model=model_name),
-            persist_directory=PERSIST_DIRECTORY
-        )
-    else:
-        return Chroma(
-            embedding_function=OllamaEmbeddings(model=model_name),
-            persist_directory=PERSIST_DIRECTORY
-        )
+    print("Creating embeddings and loading documents into Chroma")
+    vector_store = Chroma(
+        collection_name="example_collection",
+        embedding_function=embeddings,
+        persist_directory=PERSIST_DIRECTORY
+    )
+    vector_store.add_documents(documents=documents)
+    return vector_store
 
 
 def load_documents(path: str) -> List[Document]:

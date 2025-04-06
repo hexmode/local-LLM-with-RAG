@@ -15,7 +15,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 
-def getChatGraph(llm_model_name, db) -> CompiledGraph:
+def getChatGraph(llm_model_name: str, db) -> CompiledGraph:
     graph_builder = StateGraph(State)
     llm = ChatOllama(model=llm_model_name)
 
@@ -26,6 +26,7 @@ def getChatGraph(llm_model_name, db) -> CompiledGraph:
     graph_builder.add_edge(START, "chatbot")
     graph_builder.add_edge("chatbot", END)
     return graph_builder.compile()
+
 
 condense_question = """Given the following conversation and a follow-up question, rephrase the follow-up question to be a standalone question.
 
